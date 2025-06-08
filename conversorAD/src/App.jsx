@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useStopwatch } from "react-timer-hook";
 import "./App.css";
 
@@ -6,16 +6,53 @@ function App() {
   const { seconds, minutes, isRunning, start, pause, reset } = useStopwatch({
     autoStart: false,
   });
+  const [mediaRecorder, setMediaRecorder] = useState(null);
+  const [chunks, setChunks] = useState([]);
+  const [recordings, setRecordings] = useState([]);
 
-  const handleGrabar = (e) => {
-  e.preventDefault();
-  if (isRunning){
-    reset(0, false)
-  }else{
-    start()
-  }
-  
-};
+  const streamRef = useRef(null);
+
+  const handleStart = async () => {
+    start();
+
+    if (!navigator.mediaDevices) {
+      alert("Tu navegador no soporta getUserMedia");
+      return;
+    }
+
+    const constraints = { audio: true };
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    streamRef.current = stream;
+
+    const recorder = new MediaRecorder(stream);
+
+    recorder.ondataavailable = (e) => {
+      setChunks((prev) => [...prev, e.data]);
+    };
+
+    recorder.onstop = () => {
+      const blob = new Blob(chunks, { type: "audio/ogg; codecs=opus" });
+      const audioURL = URL.createObjectURL(blob);
+      const name = prompt("Nombre del clip:");
+      setRecordings((prev) => [...prev, { name, audioURL }]);
+      setChunks([]);
+    };
+
+    recorder.start();
+    setMediaRecorder(recorder);
+  };
+
+  const handleStop = () => {
+    reset(0, false);
+    if (mediaRecorder) {
+      mediaRecorder.stop();
+      streamRef.current.getTracks().forEach((track) => track.stop());
+    }
+  };
+
+  const handleDelete = (index) => {
+    setRecordings((prev) => prev.filter((_, i) => i !== index));
+  };
 
   return (
     <main className="container">
@@ -27,7 +64,12 @@ function App() {
             {String(seconds).padStart(2, "0")}
           </h2>
 
-          <button onClick={handleGrabar} className="btn btn-primary">
+          <button
+            onClick={() => {
+              isRunning ? handleStop() : handleStart();
+            }}
+            className="btn btn-primary"
+          >
             {isRunning ? "Parar" : "Grabar"}
           </button>
         </article>
@@ -75,12 +117,13 @@ function App() {
         </article>
 
         <article className="card card-body col-lg-3">
-          <p>
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Quia
-            veritatis dolorum possimus, quaerat nisi ipsum nihil voluptas
-            accusantium esse debitis ea fugit hic eveniet quos at! Eius
-            recusandae aliquam minus!
-          </p>
+          {recordings.map((clip, index) => (
+            <div key={index} className="clip">
+              <p>{clip.name}</p>
+              <audio controls src={clip.audioURL}></audio>
+              <button onClick={() => handleDelete(index)}>Eliminar</button>
+            </div>
+          ))}
         </article>
       </section>
     </main>
