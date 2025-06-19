@@ -33,8 +33,8 @@ function App() {
     recorder.onstop = () => {
       const blob = new Blob(chunks, { type: "audio/ogg; codecs=opus" });
       const audioURL = URL.createObjectURL(blob);
-      const name = prompt("Nombre del clip:");
-      setRecordings((prev) => [...prev, { name, audioURL }]);
+      
+      setRecordings((prev) => [...prev, { name:'antes', audioURL , blob}]);
       setChunks([]);
     };
 
@@ -53,6 +53,16 @@ function App() {
   const handleDelete = (index) => {
     setRecordings((prev) => prev.filter((_, i) => i !== index));
   };
+  const hanldeConvertion = async (e) =>{
+    e.preventDefault();
+
+    const form = e.target;
+    const nombre = form.nombre.value;
+    const formato = form.formato.value;
+    const sampleRate = Number(form.sampleRate.value);
+    const bitDepth = Number(form.bitDepth.value);
+    const archivoAudio = recordings[0];
+  }
 
   return (
     <main className="container">
@@ -77,7 +87,7 @@ function App() {
         <article className="col-lg-5 card card-body">
           <h3>FORMATO</h3>
 
-          <form action="/enviar" method="post">
+          <form action="/enviar" method="post" onSubmit={hanldeConvertion}>
             <label htmlFor="formato">FORMATO</label>
             <select id="formato" name="formato" className="form-select mb-3">
               <option value="wav">WAV</option>
