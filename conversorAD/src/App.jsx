@@ -1,14 +1,18 @@
 import { useState, useRef } from "react";
 import { useStopwatch } from "react-timer-hook";
 import "./App.css";
+import servicioConverter from "./services/converter";
+import FrecuenciaChart from "./components/espFrecuenciaChart"
 
 function App() {
   const { seconds, minutes, isRunning, start, pause, reset } = useStopwatch({
     autoStart: false,
   });
   const [mediaRecorder, setMediaRecorder] = useState(null);
-  const [chunks, setChunks] = useState([]);
+  const chunksRef = useRef([]);
   const [recordings, setRecordings] = useState([]);
+  const [originalSpectrum, setOriginalSpectrum] = useState(null);
+  const [convertedSpectrum, setConvertedSpectrum] = useState(null);
 
   const streamRef = useRef(null);
 
@@ -27,15 +31,17 @@ function App() {
     const recorder = new MediaRecorder(stream);
 
     recorder.ondataavailable = (e) => {
-      setChunks((prev) => [...prev, e.data]);
+      chunksRef.current.push(e.data);
     };
 
     recorder.onstop = () => {
-      const blob = new Blob(chunks, { type: "audio/ogg; codecs=opus" });
+      const blob = new Blob(chunksRef.current, {
+        type: "audio/ogg; codecs=opus",
+      });
       const audioURL = URL.createObjectURL(blob);
-      
-      setRecordings((prev) => [...prev, { name:'antes', audioURL , blob}]);
-      setChunks([]);
+
+      setRecordings([{ name: "antes", audioURL, blob }])
+      chunksRef.current = [];
     };
 
     recorder.start();
@@ -50,19 +56,45 @@ function App() {
     }
   };
 
-  const handleDelete = (index) => {
-    setRecordings((prev) => prev.filter((_, i) => i !== index));
-  };
-  const hanldeConvertion = async (e) =>{
+  const hanldeConversion = async (e) => {
     e.preventDefault();
 
+    if (recordings.length === 0) {
+      alert("No hay grabación para convertir");
+      return;
+    }
+
     const form = e.target;
-    const nombre = form.nombre.value;
     const formato = form.formato.value;
-    const sampleRate = Number(form.sampleRate.value);
-    const bitDepth = Number(form.bitDepth.value);
-    const archivoAudio = recordings[0];
-  }
+    const configMap = {
+      low: 8000,
+      "medium-low": 16000,
+      medium: 22050,
+      high: 44100,
+      "very-high": 96000,
+    };
+    const selectedConfig = form.configuracion.value;
+    const sampleRate = configMap[selectedConfig];
+
+    const bitDepth = Number(form.tasa.value);
+    const blobAudio = recordings[0].blob;
+
+    const result = await servicioConverter({
+      inputBlob: blobAudio,
+      targetSampleRate: sampleRate,
+      bitDepth,
+      format: formato,
+    });
+
+    // Asegúrate que outputBlob tiene el tipo MIME correcto para reproducirse
+    const audioURL = URL.createObjectURL(result.outputBlob);
+    setRecordings((prev) => [
+      prev[0],
+      { name: "despues", audioURL, blob: result.outputBlob },
+    ]);
+    setOriginalSpectrum(result.originalSpectrum);
+    setConvertedSpectrum(result.convertedSpectrum);
+  };
 
   return (
     <main className="container">
@@ -87,7 +119,7 @@ function App() {
         <article className="col-lg-5 card card-body">
           <h3>FORMATO</h3>
 
-          <form action="/enviar" method="post" onSubmit={hanldeConvertion}>
+          <form action="/enviar" method="post" onSubmit={hanldeConversion}>
             <label htmlFor="formato">FORMATO</label>
             <select id="formato" name="formato" className="form-select mb-3">
               <option value="wav">WAV</option>
@@ -96,7 +128,19 @@ function App() {
 
             <div className="d-flex flex-column">
               <label htmlFor="configuracion">CONFIGURACIÓN</label>
-              <input type="range" name="frecuencia" id="rango-frecuencia" />
+              <select
+                name="configuracion"
+                id="configuracion"
+                className="form-select"
+              >
+                <option value="low">Baja (8 kHz - Teléfono)</option>
+                <option value="medium-low">
+                  Media-Baja (16 kHz - Voz clara)
+                </option>
+                <option value="medium">Media (22.05 kHz - Radio)</option>
+                <option value="high">Alta (44.1 kHz - CD)</option>
+                <option value="very-high">Muy Alta (96 kHz - Estudio)</option>
+              </select>
             </div>
 
             <label htmlFor="tasa">TASA DE MUESTREO</label>
@@ -107,7 +151,7 @@ function App() {
             </select>
 
             <button type="submit" className="btn btn-primary mt-3">
-              EXPORTAR
+              CONVERTIR
             </button>
           </form>
         </article>
@@ -118,10 +162,20 @@ function App() {
           <div className="row">
             <div className="col-lg-6">
               <h3 className="text-center fs-5">ANTES</h3>
+              {originalSpectrum ? (
+                <FrecuenciaChart data={originalSpectrum} />
+              ) : (
+                <p className="text-center"></p>
+              )}
             </div>
 
             <div className="col-lg-6">
               <h3 className="text-center fs-5">DESPUES</h3>
+              {convertedSpectrum ? (
+                <FrecuenciaChart data={convertedSpectrum} />
+              ) : (
+                <p className="text-center"></p>
+              )}
             </div>
           </div>
         </article>
@@ -131,7 +185,6 @@ function App() {
             <div key={index} className="clip">
               <p>{clip.name}</p>
               <audio controls src={clip.audioURL}></audio>
-              <button onClick={() => handleDelete(index)}>Eliminar</button>
             </div>
           ))}
         </article>

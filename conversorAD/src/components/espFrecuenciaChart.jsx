@@ -18,18 +18,33 @@ function FrecuenciaChart({ data }) {
             label: "Frecuencia (dB)",
             data: data,
             backgroundColor: "#a855f7",
+            barThickness: 1.5,
           },
         ],
       },
       options: {
         responsive: true,
         animation: false,
+        maintainAspectRatio: false,
         scales: {
           y: {
-            beginAtZero: true,
-            max: 255,
+            min: -100,
+            max: 0,
+            reverse: true, // 🔁 Esto invierte visualmente el eje
+            title: {
+              display: true,
+              text: "dB",
+            },
+            ticks: {
+              callback: (value) => `${value} dB`,
+            },
           },
           x: {
+            display: false,
+          },
+        },
+        plugins: {
+          legend: {
             display: false,
           },
         },
@@ -39,7 +54,11 @@ function FrecuenciaChart({ data }) {
     return () => chart.destroy();
   }, [data]);
 
-  return <canvas ref={canvasRef} width={400} height={150}></canvas>;
+  return (
+    <div style={{ width: "100%", height: "200px" }}>
+      <canvas ref={canvasRef}></canvas>
+    </div>
+  );
 }
 
 export default FrecuenciaChart;
