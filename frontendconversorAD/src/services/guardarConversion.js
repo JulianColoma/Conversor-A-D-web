@@ -5,13 +5,14 @@ export default class GuardarConversion {
       try {
         const body = {
           duracion_original,
-          frecuencia_original: fm_original,
-          frecuencia_convertida: fm_convertida,
-          bit_depth: bitD,
+          frecuencia_muestreo_original: fm_original,
+          frecuencia_muestreo_objetivo: fm_convertida,
+          profundidad_bits: bitD,
           formato,
         };
+
   
-        const res = await fetch(GuardarConversion.apiUrl, {
+        const res = await fetch(`${GuardarConversion.apiUrl}/conversiones`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
