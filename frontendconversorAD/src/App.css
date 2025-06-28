@@ -1,0 +1,67 @@
+body{
+    background-color: #292E38;
+}
+.card-gris{
+    background-color: #353B44;
+}
+.card-frecuencia{
+    background-color: #1D232B;
+}
+.boton-circular {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.boton-grabar {
+  background-color: #ff5e5e;
+}
+
+.boton-grabar::before {
+  content: "";
+  background-color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: block;
+}
+
+.boton-pausa {
+  background-color: #cccccc;
+}
+
+.boton-pausa::before {
+  content: "";
+  background-color: black;
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.boton-mic {
+  padding: 0.4rem 1rem;
+  border: none;
+  width: 300px;
+  height: 50px;
+  border-radius: 999px; 
+  font-weight: bold;
+  font-size: 1.3rem;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.2);
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.mic-detectado {
+  background-color: #e0e0e0;
+  color: #666666;
+}
+
+.mic-no-detectado {
+  background-color: #ff4d4d;
+  color: white;
+}

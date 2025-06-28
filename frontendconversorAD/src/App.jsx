@@ -14,7 +14,7 @@ function App() {
   const [recordings, setRecordings] = useState([]);
   const [originalSpectrum, setOriginalSpectrum] = useState(null);
   const [convertedSpectrum, setConvertedSpectrum] = useState(null);
-
+  const [microfonoDetectado, setMicrofonoDetectado] = useState(true)
   const streamRef = useRef(null);
 
   const handleStart = async () => {
@@ -22,13 +22,13 @@ function App() {
 
     if (!navigator.mediaDevices) {
       alert("Tu navegador no soporta getUserMedia");
+      setMicrofonoDetectado(false);
       return;
     }
 
     const constraints = { audio: true };
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     streamRef.current = stream;
-
     const recorder = new MediaRecorder(stream);
 
     recorder.ondataavailable = (e) => {
@@ -114,115 +114,137 @@ function App() {
   };
 
   return (
-    <main className="container">
-      <h1 className="text-center">CONVERSOR DE A/D</h1>
-      <section className="row">
-        <article className="col-lg-7 card card-body">
-          <h2 className="text-center">
-            {String(minutes).padStart(2, "0")}:
-            {String(seconds).padStart(2, "0")}
-          </h2>
-
-          <button
-            onClick={() => {
-              isRunning ? handleStop() : handleStart();
-            }}
-            className="btn btn-primary"
-          >
-            {isRunning ? "Parar" : "Grabar"}
-          </button>
-        </article>
-
-        <article className="col-lg-5 card card-body">
-          <h3>FORMATO</h3>
-
-          <form action="/enviar" method="post" onSubmit={hanldeConversion}>
-            <label htmlFor="formato">FORMATO</label>
-            <select id="formato" name="formato" className="form-select mb-3">
-              <option value="wav">WAV</option>
-              <option value="mp3">MP3</option>
-            </select>
-
-            <div className="d-flex flex-column">
-              <label htmlFor="configuracion">CONFIGURACIÓN</label>
-              <select
-                name="configuracion"
-                id="configuracion"
-                className="form-select"
+    <main className="container mt-5 text-light">
+      <h1 className="text-center mb-5">CONVERSOR DE A/D</h1>
+      <section className="row g-3">
+        <div className="col-lg-7 d-flex">
+          <article className="card card-body card-gris">
+            <h2 className="text-center fs-1 mb-5">
+              {String(minutes).padStart(2, "0")}:
+              {String(seconds).padStart(2, "0")}
+            </h2>
+            <div className="container-fluid d-flex flex-column align-items-center">
+              <button
+                className={`mb-3 boton-mic ${
+                  microfonoDetectado ? "mic-detectado" : "mic-no-detectado"
+                }`}
               >
-                <option value="low">Baja (8 kHz - Teléfono)</option>
-                <option value="medium-low">
-                  Media-Baja (16 kHz - Voz clara)
-                </option>
-                <option value="medium">Media (22.05 kHz - Radio)</option>
-                <option value="high">Alta (44.1 kHz - CD)</option>
-                <option value="very-high">Muy Alta (96 kHz - Estudio)</option>
+                {microfonoDetectado
+                  ? "Micrófono detectado"
+                  : "Micrófono no detectado"}
+              </button>
+
+              <button
+                onClick={() => {
+                  isRunning ? handleStop() : handleStart();
+                }}
+                className={`mb-5 boton-circular ${
+                  isRunning ? "boton-pausa" : "boton-grabar"
+                }`}
+                title={isRunning ? "Parar" : "Grabar"}
+              ></button>
+            </div>
+          </article>
+        </div>
+
+        <div className="col-lg-5">
+          <article className="card card-body card-gris d-flex px-5 py-4">
+            <form action="/enviar" method="post" onSubmit={hanldeConversion}>
+              <label htmlFor="formato">FORMATO</label>
+              <select id="formato" name="formato" className="form-select mb-3">
+                <option value="wav">WAV</option>
+                <option value="mp3">MP3</option>
               </select>
-            </div>
 
-            <label htmlFor="tasa">TASA DE MUESTREO</label>
-            <select id="tasa" name="tasa" className="form-select mb-3">
-              <option value="8">8 bits</option>
-              <option value="16">16 bits</option>
-              <option value="32">32 bits</option>
-            </select>
-
-            <button type="submit" className="btn btn-primary mt-3">
-              CONVERTIR
-            </button>
-          </form>
-        </article>
-
-        <article className="card card-body col-lg-9">
-          <h2 className="text-center">ESPECTRO DE FRECUENCIA</h2>
-
-          <div className="row">
-            <div className="col-lg-6">
-              <h3 className="text-center fs-5">ANTES</h3>
-              {originalSpectrum ? (
-                <FrecuenciaChart data={originalSpectrum} />
-              ) : (
-                <p className="text-center"></p>
-              )}
-            </div>
-
-            <div className="col-lg-6">
-              <h3 className="text-center fs-5">DESPUES</h3>
-              {convertedSpectrum ? (
-                <FrecuenciaChart data={convertedSpectrum} />
-              ) : (
-                <p className="text-center"></p>
-              )}
-            </div>
-          </div>
-        </article>
-
-        <article className="card card-body col-lg-3">
-          {recordings.map((clip, index) => {
-            const sizeKB = (clip.blob.size / 1024).toFixed(2);
-            const sizeMB = (clip.blob.size / (1024 * 1024)).toFixed(2);
-            const isLarge = clip.blob.size >= 1024 * 1024;
-
-            return (
-              <div key={index} className="card mb-3 p-2 shadow-sm">
-                <p className="mb-1 fw-bold">{clip.name.toUpperCase()}</p>
-                <audio controls src={clip.audioURL} className="w-100 mb-2" />
-                <p className="mb-1 text-muted">
-                  Tamaño: {isLarge ? `${sizeMB} MB` : `${sizeKB} KB`}
-                </p>
-                <a
-                  href={clip.audioURL}
-                  download={`audio-${clip.name}.${
-                    clip.audioURL.includes("mp3") ? "mp3" : "wav"
-                  }`}
-                  className="btn btn-sm btn-outline-primary w-100"
+              <div className="d-flex flex-column mb-3">
+                <label htmlFor="configuracion">CONFIGURACIÓN</label>
+                <select
+                  name="configuracion"
+                  id="configuracion"
+                  className="form-select"
                 >
-                  Descargar
-                </a>
+                  <option value="low">Baja (8 kHz - Teléfono)</option>
+                  <option value="medium-low">
+                    Media-Baja (16 kHz - Voz clara)
+                  </option>
+                  <option value="medium">Media (22.05 kHz - Radio)</option>
+                  <option value="high">Alta (44.1 kHz - CD)</option>
+                  <option value="very-high">Muy Alta (96 kHz - Estudio)</option>
+                </select>
               </div>
-            );
-          })}
-        </article>
+
+              <label htmlFor="tasa">TASA DE MUESTREO</label>
+              <select id="tasa" name="tasa" className="form-select mb-3">
+                <option value="8">8 bits</option>
+                <option value="16">16 bits</option>
+                <option value="32">32 bits</option>
+              </select>
+
+              <button type="submit" className="btn btn-primary mt-3 w-100">
+                CONVERTIR
+              </button>
+            </form>
+          </article>
+        </div>
+        <div className="col-lg-9">
+          <article className="card card-body card-frecuencia">
+            <h2 className="text-center">ESPECTRO DE FRECUENCIA</h2>
+
+            <div className="row">
+              <div className="col-lg-6">
+                <h3 className="text-center fs-5">ANTES</h3>
+                {originalSpectrum ? (
+                  <FrecuenciaChart data={originalSpectrum} />
+                ) : (
+                  <p className="text-center"></p>
+                )}
+              </div>
+
+              <div className="col-lg-6">
+                <h3 className="text-center fs-5">DESPUES</h3>
+                {convertedSpectrum ? (
+                  <FrecuenciaChart data={convertedSpectrum} />
+                ) : (
+                  <p className="text-center"></p>
+                )}
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <div className="col-lg-3 d-flex">
+          <article className="card card-body card-gris d-flex gap-2">
+            {recordings.map((clip, index) => {
+              const sizeKB = (clip.blob.size / 1024).toFixed(2);
+              const sizeMB = (clip.blob.size / (1024 * 1024)).toFixed(2);
+              const isLarge = clip.blob.size >= 1024 * 1024;
+
+              return (
+                <div
+                  key={index}
+                  className="card p-2 shadow-sm card-gris text-light "
+                >
+                  <p className="mb-1 text-light fw-bold">
+                    {clip.name.toUpperCase()}
+                  </p>
+                  <audio controls src={clip.audioURL} className="w-100 mb-2" />
+                  <p className="mb-1 text-light">
+                    Tamaño: {isLarge ? `${sizeMB} MB` : `${sizeKB} KB`}
+                  </p>
+                  <a
+                    href={clip.audioURL}
+                    download={`audio-${clip.name}.${
+                      clip.audioURL.includes("mp3") ? "mp3" : "wav"
+                    }`}
+                    className="btn btn-sm btn-outline-primary w-100"
+                  >
+                    Descargar
+                  </a>
+                </div>
+              );
+            })}
+          </article>
+        </div>
       </section>
     </main>
   );
