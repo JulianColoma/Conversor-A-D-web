@@ -15,11 +15,11 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    command: >
+    command: > 
       sh -c "
-      sleep 10 &&
-      python crear_Tabla.py
-      "
+      python crear_Tabla.py &&
+      python main.py "
+
 
   db:
     image: mysql:8.0
