@@ -157,7 +157,7 @@ function App() {
               </select>
 
               <div className="d-flex flex-column mb-3">
-                <label htmlFor="configuracion">CONFIGURACIÓN</label>
+                <label htmlFor="configuracion">TASA DE MUESTREO</label>
                 <select
                   name="configuracion"
                   id="configuracion"
@@ -173,7 +173,7 @@ function App() {
                 </select>
               </div>
 
-              <label htmlFor="tasa">TASA DE MUESTREO</label>
+              <label htmlFor="tasa">NIVELES DE BITS</label>
               <select id="tasa" name="tasa" className="form-select mb-3">
                 <option value="8">8 bits</option>
                 <option value="16">16 bits</option>

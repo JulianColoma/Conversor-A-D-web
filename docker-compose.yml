@@ -1,0 +1,40 @@
+version: "3.9"
+
+services:
+  backend:
+    build: ./conversorAD
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./conversorAD:/app
+    environment:
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=rootpass
+      - DB_NAME=conversiones_db
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "
+      sleep 10 &&
+      python crear_Tabla.py
+      "
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: conversiones_db
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-prootpass"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db_data:

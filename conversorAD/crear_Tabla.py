@@ -1,10 +1,13 @@
 import mysql.connector
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
 conn = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password="rootpass",
-    database="conversiones_db"
+    host=os.environ.get("DB_HOST", "localhost"),
+    user=os.environ.get("DB_USER", "root"),
+    password=os.environ.get("DB_PASSWORD", "rootpass"),
+    database=os.environ.get("DB_NAME", "conversiones_db")
 )
 
 cursor = conn.cursor()

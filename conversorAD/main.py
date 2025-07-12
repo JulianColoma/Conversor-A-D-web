@@ -16,7 +16,10 @@ def get_db_connection():
         password=os.environ.get("DB_PASSWORD", "rootpass"),
         database=os.environ.get("DB_NAME", "conversiones_db")
     )
-
+# para checkear si anda
+@app.route("/", methods=["GET"])
+def index():
+    return jsonify({"mensaje": "API funcionando correctamente"}), 200
 
 @app.route("/conversiones", methods=["POST"])
 def agregar_conversion():
@@ -54,6 +57,6 @@ def obtener_conversiones():
     return jsonify(resultado)
 
 if __name__ == "__main__":
-    time.sleep(5)
+    time.sleep(10)
     app.run(host="0.0.0.0", port=5000, debug=True)
 
